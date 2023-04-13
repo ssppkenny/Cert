@@ -1,0 +1,30 @@
+.questions {
+	border: 0.01em solid black;
+	width: 50%;
+}
+
+span.clear {
+	clear:left;
+	display: block;
+}
+
+.question-text {
+	margin: 1em 1em 1em 1em;
+}
+
+button[type=button] {
+	float: right;
+}
+
+.contents {
+	display: flex;
+	justify-content: center;
+}
+
+input[type=checkbox] {
+	float: right;
+	position: relative;
+	clear: both;
+	padding: 0;
+	margin: 0;
+}
