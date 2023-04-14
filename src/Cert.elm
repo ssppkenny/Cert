@@ -29,7 +29,7 @@ type alias Model =
 
 
 type alias Question =
-    { text : String, type_ : QuestionType, lines : Dict String QuestionLine }
+    { number : Int, text : String, type_ : QuestionType, lines : Dict String QuestionLine }
 
 
 type alias JsonQuestion =
@@ -86,13 +86,49 @@ jsonQuestionsDecoder =
     Json.Decode.list jsonQuestionDecoder
 
 
+answersToDict : List Answer -> Dict String QuestionLine
+answersToDict loa =
+    let
+        listOfPairs =
+            List.map (\e -> ( e.letter, { text = e.text, selected = e.selected, checked = False } )) loa
+    in
+    Dict.fromList listOfPairs
+
+
+jsonQuestionToQuestion : JsonQuestion -> Question
+jsonQuestionToQuestion jq =
+    { number = jq.number
+    , text = jq.text
+    , type_ =
+        if jq.type_ == "M" then
+            Multi
+
+        else
+            Single
+    , lines = answersToDict jq.answers
+    }
+
+
+jsonQuestionsToModel : List JsonQuestion -> Model
+jsonQuestionsToModel jqs =
+    let
+        listOfQuestions =
+            List.map jsonQuestionToQuestion jqs
+
+        listOfPairs =
+            List.map (\e -> ( e.number, e )) listOfQuestions
+    in
+    { current = 1, questions = Dict.fromList listOfPairs }
+
+
 initialModel : Model
 initialModel =
     { current = 1
     , questions =
         Dict.fromList
             [ ( 1
-              , { text = "This is a first question"
+              , { number = 1
+                , text = "This is a first question"
                 , type_ = Multi
                 , lines =
                     Dict.fromList
@@ -102,7 +138,8 @@ initialModel =
                 }
               )
             , ( 2
-              , { text = "This is a second question"
+              , { number = 2
+                , text = "This is a second question"
                 , type_ = Single
                 , lines =
                     Dict.fromList
@@ -121,7 +158,7 @@ getQuestion number questions =
         question =
             case Dict.get number questions of
                 Nothing ->
-                    { text = "", type_ = Multi, lines = Dict.fromList [] }
+                    { number = 1, text = "", type_ = Multi, lines = Dict.fromList [] }
 
                 Just q ->
                     q
@@ -143,13 +180,16 @@ view model =
         lines =
             Dict.toList question.lines
     in
-    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox" ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ] ]) ]
+    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox" ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Previous" ] ]) ]
 
 
 update msg model =
     case msg of
         ChangeQuestion number ->
             ( { model | current = number }, Cmd.none )
+
+        GotData (Ok jsonQuestions) ->
+            ( jsonQuestionsToModel jsonQuestions, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

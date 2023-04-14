@@ -5477,6 +5477,7 @@ var $author$project$Cert$initialModel = {
 								'B',
 								{checked: false, selected: false, text: 'This is a second question'})
 							])),
+					number: 1,
 					text: 'This is a first question',
 					type_: $author$project$Cert$Multi
 				}),
@@ -5493,6 +5494,7 @@ var $author$project$Cert$initialModel = {
 								'B',
 								{checked: false, selected: false, text: 'This is a second question'})
 							])),
+					number: 2,
 					text: 'This is a second question',
 					type_: $author$project$Cert$Single
 				})
@@ -6214,6 +6216,38 @@ var $author$project$Cert$initialSearchCmd = $elm$http$Http$get(
 	});
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $author$project$Cert$answersToDict = function (loa) {
+	var listOfPairs = A2(
+		$elm$core$List$map,
+		function (e) {
+			return _Utils_Tuple2(
+				e.letter,
+				{checked: false, selected: e.selected, text: e.text});
+		},
+		loa);
+	return $elm$core$Dict$fromList(listOfPairs);
+};
+var $author$project$Cert$jsonQuestionToQuestion = function (jq) {
+	return {
+		lines: $author$project$Cert$answersToDict(jq.answers),
+		number: jq.number,
+		text: jq.text,
+		type_: (jq.type_ === 'M') ? $author$project$Cert$Multi : $author$project$Cert$Single
+	};
+};
+var $author$project$Cert$jsonQuestionsToModel = function (jqs) {
+	var listOfQuestions = A2($elm$core$List$map, $author$project$Cert$jsonQuestionToQuestion, jqs);
+	var listOfPairs = A2(
+		$elm$core$List$map,
+		function (e) {
+			return _Utils_Tuple2(e.number, e);
+		},
+		listOfQuestions);
+	return {
+		current: 1,
+		questions: $elm$core$Dict$fromList(listOfPairs)
+	};
+};
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Cert$update = F2(
@@ -6226,7 +6260,14 @@ var $author$project$Cert$update = F2(
 					{current: number}),
 				$elm$core$Platform$Cmd$none);
 		} else {
-			return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			if (msg.a.$ === 'Ok') {
+				var jsonQuestions = msg.a.a;
+				return _Utils_Tuple2(
+					$author$project$Cert$jsonQuestionsToModel(jsonQuestions),
+					$elm$core$Platform$Cmd$none);
+			} else {
+				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+			}
 		}
 	});
 var $author$project$Cert$ChangeQuestion = function (a) {
@@ -6258,6 +6299,7 @@ var $author$project$Cert$getQuestion = F2(
 			if (_v0.$ === 'Nothing') {
 				return {
 					lines: $elm$core$Dict$fromList(_List_Nil),
+					number: 1,
 					text: '',
 					type_: $author$project$Cert$Multi
 				};
@@ -6394,6 +6436,18 @@ var $author$project$Cert$view = function (model) {
 							_List_fromArray(
 								[
 									$elm$html$Html$text('Next')
+								])),
+							A2(
+							$elm$html$Html$button,
+							_List_fromArray(
+								[
+									$elm$html$Html$Attributes$type_('button'),
+									$elm$html$Html$Events$onClick(
+									$author$project$Cert$ChangeQuestion(model.current - 1))
+								]),
+							_List_fromArray(
+								[
+									$elm$html$Html$text('Previous')
 								]))
 						])))
 			]));
