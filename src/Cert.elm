@@ -1,8 +1,12 @@
 module Cert exposing (main)
 
+import Browser
 import Dict exposing (Dict)
 import Html exposing (button, div, input, span, text)
 import Html.Attributes exposing (..)
+import Html.Events exposing (onClick)
+import Http
+import Json.Encode exposing (string)
 
 
 type alias QuestionLine =
@@ -17,13 +21,32 @@ type alias Question =
     { text : String, lines : Dict String QuestionLine }
 
 
+type Msg
+    = GotData (Result Http.Error String)
+    | ChangeQuestion Int
+
+
+initialSearchCmd : Cmd Msg
+initialSearchCmd =
+    Cmd.none
+
+
 initialModel : Model
 initialModel =
     { current = 1
     , questions =
         Dict.fromList
             [ ( 1
-              , { text = "This is a question"
+              , { text = "This is a first question"
+                , lines =
+                    Dict.fromList
+                        [ ( "A", { text = "This is a first question", selected = True, checked = False } )
+                        , ( "B", { text = "This is a second question", selected = False, checked = False } )
+                        ]
+                }
+              )
+            , ( 2
+              , { text = "This is a second question"
                 , lines =
                     Dict.fromList
                         [ ( "A", { text = "This is a first question", selected = True, checked = False } )
@@ -63,12 +86,23 @@ view model =
         lines =
             Dict.toList question.lines
     in
-    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox" ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button" ] [ text "Next" ] ]) ]
+    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox" ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ] ]) ]
 
 
 update msg model =
-    model
+    case msg of
+        ChangeQuestion number ->
+            ( { model | current = number }, Cmd.none )
+
+        _ ->
+            ( model, Cmd.none )
 
 
+main : Program () Model Msg
 main =
-    view initialModel
+    Browser.element
+        { init = \flags -> ( initialModel, initialSearchCmd )
+        , view = view
+        , update = update
+        , subscriptions = \_ -> Sub.none
+        }

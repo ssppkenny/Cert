@@ -8,6 +8,10 @@ span.clear {
 	display: block;
 }
 
+span.letter {
+	padding: 0 4px 0 0px;
+}
+
 .question-text {
 	margin: 1em 1em 1em 1em;
 }
