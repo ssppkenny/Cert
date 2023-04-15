@@ -173,6 +173,45 @@ initialModel =
     }
 
 
+rateModel : Model -> Float
+rateModel model =
+    let
+        qs =
+            List.map (\e -> Tuple.second e) (Dict.toList model.questions)
+
+        s =
+            List.map rateQuestion qs
+    in
+    toFloat (List.sum s) / toFloat (List.length s)
+
+
+rateQuestion : Question -> Int
+rateQuestion q =
+    let
+        lines =
+            Dict.toList q.lines
+
+        s =
+            List.map
+                (\e ->
+                    if (Tuple.second e).checked == (Tuple.second e).selected then
+                        1
+
+                    else
+                        0
+                )
+                lines
+
+        t =
+            List.sum s
+    in
+    if List.length lines == t then
+        1
+
+    else
+        0
+
+
 getQuestion : Int -> Dict Int Question -> Question
 getQuestion number questions =
     let
@@ -189,11 +228,8 @@ getQuestion number questions =
 
 view model =
     let
-        current =
-            model.current
-
         question =
-            getQuestion current model.questions
+            getQuestion model.current model.questions
 
         textline =
             question.text
@@ -201,13 +237,21 @@ view model =
         lines =
             Dict.toList question.lines
     in
-    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Previous" ] ]) ]
+    if model.current <= List.length (Dict.toList model.questions) then
+        div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Previous" ] ]) ]
+
+    else
+        div [ class "contents" ] [ span [] [ text (String.fromFloat (rateModel model)) ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Review Questions" ] ]
 
 
 update msg model =
     case msg of
         ChangeQuestion number ->
-            ( { model | current = number }, Cmd.none )
+            if number > 0 then
+                ( { model | current = number }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         Checked l ->
             ( changeModel l model, Cmd.none )

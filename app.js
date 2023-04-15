@@ -6306,11 +6306,11 @@ var $author$project$Cert$update = F2(
 		switch (msg.$) {
 			case 'ChangeQuestion':
 				var number = msg.a;
-				return _Utils_Tuple2(
+				return (number > 0) ? _Utils_Tuple2(
 					_Utils_update(
 						model,
 						{current: number}),
-					$elm$core$Platform$Cmd$none);
+					$elm$core$Platform$Cmd$none) : _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 			case 'Checked':
 				var l = msg.a;
 				return _Utils_Tuple2(
@@ -6361,6 +6361,7 @@ var $elm$html$Html$Attributes$stringProperty = F2(
 	});
 var $elm$html$Html$Attributes$class = $elm$html$Html$Attributes$stringProperty('className');
 var $elm$html$Html$div = _VirtualDom_node('div');
+var $elm$core$String$fromFloat = _String_fromNumber;
 var $author$project$Cert$getQuestion = F2(
 	function (number, questions) {
 		var question = function () {
@@ -6401,16 +6402,44 @@ var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
 	return y;
 };
+var $elm$core$List$sum = function (numbers) {
+	return A3($elm$core$List$foldl, $elm$core$Basics$add, 0, numbers);
+};
+var $author$project$Cert$rateQuestion = function (q) {
+	var lines = $elm$core$Dict$toList(q.lines);
+	var s = A2(
+		$elm$core$List$map,
+		function (e) {
+			return _Utils_eq(e.b.checked, e.b.selected) ? 1 : 0;
+		},
+		lines);
+	var t = $elm$core$List$sum(s);
+	return _Utils_eq(
+		$elm$core$List$length(lines),
+		t) ? 1 : 0;
+};
+var $author$project$Cert$rateModel = function (model) {
+	var qs = A2(
+		$elm$core$List$map,
+		function (e) {
+			return e.b;
+		},
+		$elm$core$Dict$toList(model.questions));
+	var s = A2($elm$core$List$map, $author$project$Cert$rateQuestion, qs);
+	return $elm$core$List$sum(s) / $elm$core$List$length(s);
+};
 var $elm$html$Html$span = _VirtualDom_node('span');
 var $elm$virtual_dom$VirtualDom$text = _VirtualDom_text;
 var $elm$html$Html$text = $elm$virtual_dom$VirtualDom$text;
 var $elm$html$Html$Attributes$type_ = $elm$html$Html$Attributes$stringProperty('type');
 var $author$project$Cert$view = function (model) {
-	var current = model.current;
-	var question = A2($author$project$Cert$getQuestion, current, model.questions);
-	var lines = $elm$core$Dict$toList(question.lines);
+	var question = A2($author$project$Cert$getQuestion, model.current, model.questions);
 	var textline = question.text;
-	return A2(
+	var lines = $elm$core$Dict$toList(question.lines);
+	return (_Utils_cmp(
+		model.current,
+		$elm$core$List$length(
+			$elm$core$Dict$toList(model.questions))) < 1) ? A2(
 		$elm$html$Html$div,
 		_List_fromArray(
 			[
@@ -6522,6 +6551,35 @@ var $author$project$Cert$view = function (model) {
 									$elm$html$Html$text('Previous')
 								]))
 						])))
+			])) : A2(
+		$elm$html$Html$div,
+		_List_fromArray(
+			[
+				$elm$html$Html$Attributes$class('contents')
+			]),
+		_List_fromArray(
+			[
+				A2(
+				$elm$html$Html$span,
+				_List_Nil,
+				_List_fromArray(
+					[
+						$elm$html$Html$text(
+						$elm$core$String$fromFloat(
+							$author$project$Cert$rateModel(model)))
+					])),
+				A2(
+				$elm$html$Html$button,
+				_List_fromArray(
+					[
+						$elm$html$Html$Attributes$type_('button'),
+						$elm$html$Html$Events$onClick(
+						$author$project$Cert$ChangeQuestion(model.current - 1))
+					]),
+				_List_fromArray(
+					[
+						$elm$html$Html$text('Review Questions')
+					]))
 			]));
 };
 var $author$project$Cert$main = $elm$browser$Browser$element(
