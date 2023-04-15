@@ -9,14 +9,17 @@ span.clear {
 }
 
 span.letter {
+	font-weight: bold;
 	padding: 0 4px 0 0px;
 }
 
 .question-text {
 	margin: 1em 1em 1em 1em;
+	font-size: 1.5em;
 }
 
 button[type=button] {
+	margin-top: 2em;
 	float: right;
 }
 
@@ -25,10 +28,16 @@ button[type=button] {
 	justify-content: center;
 }
 
+.question {
+	margin-left: 1em;
+	margin-top: 1em;
+}
+
 input[type=checkbox] {
 	float: right;
 	position: relative;
 	clear: both;
 	padding: 0;
 	margin: 0;
+	margin-right: 5px;
 }

@@ -2,11 +2,13 @@ module Cert exposing (main)
 
 import Browser
 import Dict exposing (Dict)
-import Html exposing (button, div, input, span, text)
+import Html exposing (Attribute, Html, br, button, div, input, node, p, pre, span, text)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
+import Html.Parser
+import Html.Parser.Util
 import Http
-import Json.Decode exposing (Decoder, bool, field, int, list, map3, map4, string, succeed)
+import Json.Decode exposing (Decoder, bool, field, int, list, map3, map4, map5, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
 import Json.Encode exposing (string)
 
@@ -29,11 +31,11 @@ type alias Model =
 
 
 type alias Question =
-    { number : Int, text : String, type_ : QuestionType, lines : Dict String QuestionLine }
+    { number : Int, text : String, code : String, type_ : QuestionType, lines : Dict String QuestionLine }
 
 
 type alias JsonQuestion =
-    { number : Int, type_ : String, text : String, answers : List Answer }
+    { number : Int, type_ : String, text : String, code : String, answers : List Answer }
 
 
 type alias JsonQuestions =
@@ -75,10 +77,11 @@ answersDecoder =
 
 jsonQuestionDecoder : Decoder JsonQuestion
 jsonQuestionDecoder =
-    map4 JsonQuestion
+    map5 JsonQuestion
         (field "number" Json.Decode.int)
         (field "type" Json.Decode.string)
         (field "text" Json.Decode.string)
+        (field "code" Json.Decode.string)
         (field "answers" answersDecoder)
 
 
@@ -100,6 +103,7 @@ jsonQuestionToQuestion : JsonQuestion -> Question
 jsonQuestionToQuestion jq =
     { number = jq.number
     , text = jq.text
+    , code = jq.code
     , type_ =
         if jq.type_ == "M" then
             Multi
@@ -131,7 +135,7 @@ changeModel l model =
                     q
 
                 _ ->
-                    { number = 0, text = "", type_ = Single, lines = Dict.fromList [] }
+                    { number = 0, text = "", code = "", type_ = Single, lines = Dict.fromList [] }
 
         newQuestionLines =
             Dict.update l (Maybe.map (\ql -> { ql | checked = not ql.checked })) question.lines
@@ -150,6 +154,8 @@ initialModel =
             [ ( 1
               , { number = 1
                 , text = "This is a first question"
+                , code = """
+                <code>System.out.println("Hello")</code>"""
                 , type_ = Multi
                 , lines =
                     Dict.fromList
@@ -161,6 +167,7 @@ initialModel =
             , ( 2
               , { number = 2
                 , text = "This is a second question"
+                , code = "<pre>Test</pre>"
                 , type_ = Single
                 , lines =
                     Dict.fromList
@@ -218,12 +225,22 @@ getQuestion number questions =
         question =
             case Dict.get number questions of
                 Nothing ->
-                    { number = 1, text = "", type_ = Multi, lines = Dict.fromList [] }
+                    { number = 1, text = "", code = "", type_ = Multi, lines = Dict.fromList [] }
 
                 Just q ->
                     q
     in
     question
+
+
+textHtml : String -> List (Html.Html msg)
+textHtml t =
+    case Html.Parser.run t of
+        Ok nodes ->
+            Html.Parser.Util.toVirtualDom nodes
+
+        Err _ ->
+            []
 
 
 view model =
@@ -234,14 +251,17 @@ view model =
         textline =
             question.text
 
+        code =
+            question.code
+
         lines =
             Dict.toList question.lines
     in
     if model.current <= List.length (Dict.toList model.questions) then
-        div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Previous" ] ]) ]
+        div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ p [] [ text (String.append "Question" (String.fromInt model.current)) ], span [] [ Html.text textline ], pre [] (textHtml code) ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ Html.text (Tuple.first l) ], span [] [ Html.text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ Html.text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ Html.text "Previous" ] ]) ]
 
     else
-        div [ class "contents" ] [ span [] [ text (String.fromFloat (rateModel model)) ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Review Questions" ] ]
+        div [ class "contents" ] [ div [ class "questions" ] [ div [] [ span [] [ Html.text (String.fromFloat (rateModel model)) ] ], div [] [ button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ Html.text "Review Questions" ] ] ] ]
 
 
 update msg model =
