@@ -6216,6 +6216,57 @@ var $author$project$Cert$initialSearchCmd = $elm$http$Http$get(
 	});
 var $elm$core$Platform$Sub$batch = _Platform_batch;
 var $elm$core$Platform$Sub$none = $elm$core$Platform$Sub$batch(_List_Nil);
+var $elm$core$Maybe$map = F2(
+	function (f, maybe) {
+		if (maybe.$ === 'Just') {
+			var value = maybe.a;
+			return $elm$core$Maybe$Just(
+				f(value));
+		} else {
+			return $elm$core$Maybe$Nothing;
+		}
+	});
+var $elm$core$Basics$not = _Basics_not;
+var $author$project$Cert$changeModel = F2(
+	function (l, model) {
+		var question = function () {
+			var _v0 = A2($elm$core$Dict$get, model.current, model.questions);
+			if (_v0.$ === 'Just') {
+				var q = _v0.a;
+				return q;
+			} else {
+				return {
+					lines: $elm$core$Dict$fromList(_List_Nil),
+					number: 0,
+					text: '',
+					type_: $author$project$Cert$Single
+				};
+			}
+		}();
+		var newQuestionLines = A3(
+			$elm$core$Dict$update,
+			l,
+			$elm$core$Maybe$map(
+				function (ql) {
+					return _Utils_update(
+						ql,
+						{checked: !ql.checked});
+				}),
+			question.lines);
+		var newQuestions = A3(
+			$elm$core$Dict$update,
+			model.current,
+			$elm$core$Maybe$map(
+				function (qu) {
+					return _Utils_update(
+						qu,
+						{lines: newQuestionLines});
+				}),
+			model.questions);
+		return _Utils_update(
+			model,
+			{questions: newQuestions});
+	});
 var $author$project$Cert$answersToDict = function (loa) {
 	var listOfPairs = A2(
 		$elm$core$List$map,
@@ -6252,26 +6303,35 @@ var $elm$core$Platform$Cmd$batch = _Platform_batch;
 var $elm$core$Platform$Cmd$none = $elm$core$Platform$Cmd$batch(_List_Nil);
 var $author$project$Cert$update = F2(
 	function (msg, model) {
-		if (msg.$ === 'ChangeQuestion') {
-			var number = msg.a;
-			return _Utils_Tuple2(
-				_Utils_update(
-					model,
-					{current: number}),
-				$elm$core$Platform$Cmd$none);
-		} else {
-			if (msg.a.$ === 'Ok') {
-				var jsonQuestions = msg.a.a;
+		switch (msg.$) {
+			case 'ChangeQuestion':
+				var number = msg.a;
 				return _Utils_Tuple2(
-					$author$project$Cert$jsonQuestionsToModel(jsonQuestions),
+					_Utils_update(
+						model,
+						{current: number}),
 					$elm$core$Platform$Cmd$none);
-			} else {
-				return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
-			}
+			case 'Checked':
+				var l = msg.a;
+				return _Utils_Tuple2(
+					A2($author$project$Cert$changeModel, l, model),
+					$elm$core$Platform$Cmd$none);
+			default:
+				if (msg.a.$ === 'Ok') {
+					var jsonQuestions = msg.a.a;
+					return _Utils_Tuple2(
+						$author$project$Cert$jsonQuestionsToModel(jsonQuestions),
+						$elm$core$Platform$Cmd$none);
+				} else {
+					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
+				}
 		}
 	});
 var $author$project$Cert$ChangeQuestion = function (a) {
 	return {$: 'ChangeQuestion', a: a};
+};
+var $author$project$Cert$Checked = function (a) {
+	return {$: 'Checked', a: a};
 };
 var $elm$core$List$append = F2(
 	function (xs, ys) {
@@ -6282,6 +6342,15 @@ var $elm$core$List$append = F2(
 		}
 	});
 var $elm$html$Html$button = _VirtualDom_node('button');
+var $elm$json$Json$Encode$bool = _Json_wrap;
+var $elm$html$Html$Attributes$boolProperty = F2(
+	function (key, bool) {
+		return A2(
+			_VirtualDom_property,
+			key,
+			$elm$json$Json$Encode$bool(bool));
+	});
+var $elm$html$Html$Attributes$checked = $elm$html$Html$Attributes$boolProperty('checked');
 var $elm$json$Json$Encode$string = _Json_wrap;
 var $elm$html$Html$Attributes$stringProperty = F2(
 	function (key, string) {
@@ -6410,7 +6479,10 @@ var $author$project$Cert$view = function (model) {
 											$elm$html$Html$input,
 											_List_fromArray(
 												[
-													$elm$html$Html$Attributes$type_('checkbox')
+													$elm$html$Html$Attributes$type_('checkbox'),
+													$elm$html$Html$Events$onClick(
+													$author$project$Cert$Checked(l.a)),
+													$elm$html$Html$Attributes$checked(l.b.checked)
 												]),
 											_List_Nil),
 											A2(

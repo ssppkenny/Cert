@@ -4,7 +4,7 @@ import Browser
 import Dict exposing (Dict)
 import Html exposing (button, div, input, span, text)
 import Html.Attributes exposing (..)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, bool, field, int, list, map3, map4, string, succeed)
 import Json.Decode.Pipeline exposing (optional, required)
@@ -43,6 +43,7 @@ type alias JsonQuestions =
 type Msg
     = GotData (Result Http.Error JsonQuestions)
     | ChangeQuestion Int
+    | Checked String
 
 
 initialSearchCmd : Cmd Msg
@@ -121,6 +122,26 @@ jsonQuestionsToModel jqs =
     { current = 1, questions = Dict.fromList listOfPairs }
 
 
+changeModel : String -> Model -> Model
+changeModel l model =
+    let
+        question =
+            case Dict.get model.current model.questions of
+                Just q ->
+                    q
+
+                _ ->
+                    { number = 0, text = "", type_ = Single, lines = Dict.fromList [] }
+
+        newQuestionLines =
+            Dict.update l (Maybe.map (\ql -> { ql | checked = not ql.checked })) question.lines
+
+        newQuestions =
+            Dict.update model.current (Maybe.map (\qu -> { qu | lines = newQuestionLines })) model.questions
+    in
+    { model | questions = newQuestions }
+
+
 initialModel : Model
 initialModel =
     { current = 1
@@ -180,13 +201,16 @@ view model =
         lines =
             Dict.toList question.lines
     in
-    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox" ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Previous" ] ]) ]
+    div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ span [] [ text textline ] ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ text (Tuple.first l) ], span [] [ text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ text "Previous" ] ]) ]
 
 
 update msg model =
     case msg of
         ChangeQuestion number ->
             ( { model | current = number }, Cmd.none )
+
+        Checked l ->
+            ( changeModel l model, Cmd.none )
 
         GotData (Ok jsonQuestions) ->
             ( jsonQuestionsToModel jsonQuestions, Cmd.none )
