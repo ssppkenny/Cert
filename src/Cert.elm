@@ -27,7 +27,7 @@ type alias Answer =
 
 
 type alias Model =
-    { current : Int, questions : Dict Int Question }
+    { current : Int, review : Bool, questions : Dict Int Question }
 
 
 type alias Question =
@@ -46,6 +46,7 @@ type Msg
     = GotData (Result Http.Error JsonQuestions)
     | ChangeQuestion Int
     | Checked String
+    | Review
 
 
 initialSearchCmd : Cmd Msg
@@ -54,11 +55,6 @@ initialSearchCmd =
         { url = "http://localhost:8080/questions"
         , expect = Http.expectJson GotData jsonQuestionsDecoder
         }
-
-
-buildModel : Int -> Dict Int Question -> Model
-buildModel n d =
-    { current = n, questions = d }
 
 
 answerDecoder : Decoder Answer
@@ -123,7 +119,7 @@ jsonQuestionsToModel jqs =
         listOfPairs =
             List.map (\e -> ( e.number, e )) listOfQuestions
     in
-    { current = 1, questions = Dict.fromList listOfPairs }
+    { current = 1, review = False, questions = Dict.fromList listOfPairs }
 
 
 changeModel : String -> Model -> Model
@@ -149,13 +145,13 @@ changeModel l model =
 initialModel : Model
 initialModel =
     { current = 1
+    , review = False
     , questions =
         Dict.fromList
             [ ( 1
               , { number = 1
                 , text = "This is a first question"
-                , code = """
-                <code>System.out.println("Hello")</code>"""
+                , code = """<code>System.out.println("Hello")</code>"""
                 , type_ = Multi
                 , lines =
                     Dict.fromList
@@ -167,7 +163,7 @@ initialModel =
             , ( 2
               , { number = 2
                 , text = "This is a second question"
-                , code = "<pre>Test</pre>"
+                , code = "<code>import java.lang.*</code>"
                 , type_ = Single
                 , lines =
                     Dict.fromList
@@ -258,10 +254,30 @@ view model =
             Dict.toList question.lines
     in
     if model.current <= List.length (Dict.toList model.questions) then
-        div [ class "contents" ] [ div [ class "questions" ] (List.append (List.append [ div [ class "question-text" ] [ p [] [ text (String.append "Question" (String.fromInt model.current)) ], span [] [ Html.text textline ], pre [] (textHtml code) ] ] (List.map (\l -> div [ class "question" ] [ span [ class "letter" ] [ Html.text (Tuple.first l) ], span [] [ Html.text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]) lines)) [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ Html.text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ Html.text "Previous" ] ]) ]
+        div [ class "contents" ]
+            [ div [ class "questions" ]
+                (List.append
+                    (List.append [ div [ class "question-text" ] [ span [] [ Html.text textline ], pre [] (textHtml code) ] ]
+                        (List.map
+                            (\l ->
+                                div
+                                    (if model.review && (Tuple.second l).selected then
+                                        [ class "question", class "selected" ]
+
+                                     else
+                                        [ class "question" ]
+                                    )
+                                    [ span [ class "letter" ] [ Html.text (Tuple.first l) ], span [] [ Html.text (Tuple.second l).text ], input [ type_ "checkbox", onClick (Checked (Tuple.first l)), checked (Tuple.second l).checked ] [], span [ class "clear" ] [] ]
+                            )
+                            lines
+                        )
+                    )
+                    [ button [ type_ "button", onClick (ChangeQuestion (model.current + 1)) ] [ Html.text "Next" ], button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ Html.text "Previous" ] ]
+                )
+            ]
 
     else
-        div [ class "contents" ] [ div [ class "questions" ] [ div [] [ span [] [ Html.text (String.fromFloat (rateModel model)) ] ], div [] [ button [ type_ "button", onClick (ChangeQuestion (model.current - 1)) ] [ Html.text "Review Questions" ] ] ] ]
+        div [ class "contents" ] [ div [ class "questions" ] [ div [] [ span [] [ Html.text (String.fromFloat (rateModel model)) ] ], div [] [ button [ type_ "button", onClick Review ] [ Html.text "Review Questions" ] ] ] ]
 
 
 update msg model =
@@ -278,6 +294,9 @@ update msg model =
 
         GotData (Ok jsonQuestions) ->
             ( jsonQuestionsToModel jsonQuestions, Cmd.none )
+
+        Review ->
+            ( { model | current = 1, review = True }, Cmd.none )
 
         _ ->
             ( model, Cmd.none )

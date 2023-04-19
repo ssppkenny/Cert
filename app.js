@@ -5597,7 +5597,7 @@ var $author$project$Cert$initialModel = {
 				_Utils_Tuple2(
 				1,
 				{
-					code: '\n                <code>System.out.println("Hello")</code>',
+					code: '<code>System.out.println("Hello")</code>',
 					lines: $elm$core$Dict$fromList(
 						_List_fromArray(
 							[
@@ -5615,7 +5615,7 @@ var $author$project$Cert$initialModel = {
 				_Utils_Tuple2(
 				2,
 				{
-					code: '<pre>Test</pre>',
+					code: '<code>import java.lang.*</code>',
 					lines: $elm$core$Dict$fromList(
 						_List_fromArray(
 							[
@@ -5630,7 +5630,8 @@ var $author$project$Cert$initialModel = {
 					text: 'This is a second question',
 					type_: $author$project$Cert$Single
 				})
-			]))
+			])),
+	review: false
 };
 var $author$project$Cert$GotData = function (a) {
 	return {$: 'GotData', a: a};
@@ -6432,7 +6433,8 @@ var $author$project$Cert$jsonQuestionsToModel = function (jqs) {
 		listOfQuestions);
 	return {
 		current: 1,
-		questions: $elm$core$Dict$fromList(listOfPairs)
+		questions: $elm$core$Dict$fromList(listOfPairs),
+		review: false
 	};
 };
 var $elm$core$Platform$Cmd$batch = _Platform_batch;
@@ -6452,7 +6454,7 @@ var $author$project$Cert$update = F2(
 				return _Utils_Tuple2(
 					A2($author$project$Cert$changeModel, l, model),
 					$elm$core$Platform$Cmd$none);
-			default:
+			case 'GotData':
 				if (msg.a.$ === 'Ok') {
 					var jsonQuestions = msg.a.a;
 					return _Utils_Tuple2(
@@ -6461,6 +6463,12 @@ var $author$project$Cert$update = F2(
 				} else {
 					return _Utils_Tuple2(model, $elm$core$Platform$Cmd$none);
 				}
+			default:
+				return _Utils_Tuple2(
+					_Utils_update(
+						model,
+						{current: 1, review: true}),
+					$elm$core$Platform$Cmd$none);
 		}
 	});
 var $author$project$Cert$ChangeQuestion = function (a) {
@@ -6469,6 +6477,7 @@ var $author$project$Cert$ChangeQuestion = function (a) {
 var $author$project$Cert$Checked = function (a) {
 	return {$: 'Checked', a: a};
 };
+var $author$project$Cert$Review = {$: 'Review'};
 var $elm$core$List$append = F2(
 	function (xs, ys) {
 		if (!ys.b) {
@@ -6477,7 +6486,6 @@ var $elm$core$List$append = F2(
 			return A3($elm$core$List$foldr, $elm$core$List$cons, ys, xs);
 		}
 	});
-var $elm$core$String$append = _String_append;
 var $elm$html$Html$button = _VirtualDom_node('button');
 var $elm$json$Json$Encode$bool = _Json_wrap;
 var $elm$html$Html$Attributes$boolProperty = F2(
@@ -6536,7 +6544,6 @@ var $elm$html$Html$Events$onClick = function (msg) {
 		'click',
 		$elm$json$Json$Decode$succeed(msg));
 };
-var $elm$html$Html$p = _VirtualDom_node('p');
 var $elm$html$Html$pre = _VirtualDom_node('pre');
 var $elm$core$Tuple$second = function (_v0) {
 	var y = _v0.b;
@@ -10177,17 +10184,6 @@ var $author$project$Cert$view = function (model) {
 								_List_fromArray(
 									[
 										A2(
-										$elm$html$Html$p,
-										_List_Nil,
-										_List_fromArray(
-											[
-												$elm$html$Html$text(
-												A2(
-													$elm$core$String$append,
-													'Question',
-													$elm$core$String$fromInt(model.current)))
-											])),
-										A2(
 										$elm$html$Html$span,
 										_List_Nil,
 										_List_fromArray(
@@ -10205,7 +10201,11 @@ var $author$project$Cert$view = function (model) {
 							function (l) {
 								return A2(
 									$elm$html$Html$div,
-									_List_fromArray(
+									(model.review && l.b.selected) ? _List_fromArray(
+										[
+											$elm$html$Html$Attributes$class('question'),
+											$elm$html$Html$Attributes$class('selected')
+										]) : _List_fromArray(
 										[
 											$elm$html$Html$Attributes$class('question')
 										]),
@@ -10316,8 +10316,7 @@ var $author$project$Cert$view = function (model) {
 								_List_fromArray(
 									[
 										$elm$html$Html$Attributes$type_('button'),
-										$elm$html$Html$Events$onClick(
-										$author$project$Cert$ChangeQuestion(model.current - 1))
+										$elm$html$Html$Events$onClick($author$project$Cert$Review)
 									]),
 								_List_fromArray(
 									[

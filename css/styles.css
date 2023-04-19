@@ -33,6 +33,10 @@ button[type=button] {
 	margin-top: 1em;
 }
 
+.selected {
+	background-color: #34ebe5;
+}
+
 input[type=checkbox] {
 	float: right;
 	position: relative;
